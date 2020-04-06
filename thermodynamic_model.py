@@ -22,10 +22,6 @@ def occupancies(M_sites,M_factors):
 
 class tf_thermodynamic_model:
     def __init__(self,binding_energies,interaction_energies,rates,tf_concentrations,M_sites):
-        """
-        Create a model of a collection of binding sites and tfs.
-        """
-
         self.L = len(binding_energies[0])
         self.M_sites = M_sites
         self.M_factors = len(tf_concentrations)
