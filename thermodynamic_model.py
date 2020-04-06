@@ -8,7 +8,7 @@ def occupancies(M_sites,M_factors):
     Produce all possible occupancy patterns with M_sites and M_factors.
 
     Output:
-    r - a list of lists of length M. The jth element is of each list is the
+    r - a list of lists of length M_sites. The jth element is of each list is the
     occupancy at the jth binding site. If 0, then there is no factor at the site,
     while if k then the kth factor is bound.
     """
@@ -32,8 +32,7 @@ class tf_thermodynamic_model:
 
     def expression_level(self,g):
         """
-        Compute the expression level as a function of the mutational distances from
-        the optimal binding sites using the themrodynamic model.
+        Compute the expression level given a genome
 
         Input:
 
@@ -80,7 +79,7 @@ class tf_thermodynamic_model:
         """
         Simulate the evolutionary dynamics in the strong selection, weak mutation
         regime. In this limit we don't need to simulate the full moran process,
-        instead, we simply compute the time until the next beneficial mutation
+        instead, we simply compute the time until the next mutation
         arrises and sweeps the population. We will use Gillespie's algorithm to
         find the jump times and substitutions to make
 
