@@ -80,7 +80,7 @@ class tf_thermodynamic_model:
         """
         Simulate the evolutionary dynamics in the strong selection, weak mutation
         regime. In this limit we don't need to simulate the full moran process,
-        instead, we simply compute the time until the next beneficial mutation
+        instead, we simply compute the time until the next mutation
         arrises and sweeps the population. We will use Gillespie's algorithm to
         find the jump times and substitutions to make
 
