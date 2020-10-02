@@ -1,5 +1,7 @@
 import copy,math
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
 
 
 
@@ -18,10 +20,62 @@ def occupancies(M_sites,M_factors):
     else:
         return [[j] for j in range(M_factors+1)]
 
+# class genotype:
+#     """
+#     class for manipulating and plotting genomes
+#     I will add more functionality later
+#     """
+#     def __init__(self,g):
+#         self.g = g
 
+NUCS = ['A','T','C','G']
+MAPPING = lambda i : NUCS[i]
+
+
+
+
+class trajectory:
+    """
+    a wrapper for evolutionary trajectories
+    """
+    def __init__(self,t,G,model):
+        self.time = t
+        self.M_sites = len(G[0])
+        self.genotypes = G
+        self.model = copy.deepcopy(model)
+        self.expression_level = np.array([self.model.expression_level(g) for g in G])
+
+    def genotypes_to_string(self):
+        return [[''.join(map(MAPPING,site)) for site in g] for g in self.genotypes]
+
+    def resample_expression_level(self,new_time):
+        """
+        resample the trajectory at time new_time
+        (dt should be less than typical interjump times in trajectory)
+        """
+
+        new_el = np.ones(len(new_time))*self.expression_level[-1]
+        t = 0
+        j = 0
+        for k in range(len(self.time)-1):
+            while new_time[j]<self.time[k+1] and j<len(new_time)-1:
+                new_el[j] = self.expression_level[k]
+                j+=1
+
+        return new_el
+
+    #
+    # df = pd.DataFrame()
+    # df['time'] = t[:step]
+    # for site in range(self.M_sites):
+    #     df['site_{}'.format(site)] = [g[0] for g in G[:step]]
+    # def genotypes_`to_ints(self,g):
+    #     mapping_dct = {'A':0,'T':1,'C':2,'G':3}
+    #     return np.array([[mapping_dct[a] for a in s] for s in g])
 
 class tf_thermodynamic_model:
-    def __init__(self,binding_energies,interaction_energies,rates,tf_concentrations,M_sites):
+    def __init__(self,binding_energies,\
+                    interaction_energies,rates,tf_concentrations,M_sites):
         self.L = len(binding_energies[0])
         self.M_sites = M_sites
         self.M_factors = len(tf_concentrations)
@@ -29,6 +83,15 @@ class tf_thermodynamic_model:
         self.tf_concentrations = tf_concentrations
         self.interaction_energies = interaction_energies
         self.binding_energies = binding_energies
+
+
+    def binding_energy(self,g,s,f):
+        """
+        return the binding energy of factor f to site s on genome g
+        """
+        return np.sum([self.binding_energies[f][k,g[s,k]] for k in range(self.L)])
+
+
 
     def expression_level(self,g):
         """
@@ -146,8 +209,43 @@ class tf_thermodynamic_model:
             G.append(g_new)
             step = step+1
             t.append(t[-1]+t_next)
+        G = [g.reshape(self.M_sites,self.L) for g in G]
+        return trajectory(t,G,self)
 
-        return t[:step],G[:step]
+    def substitution_evolution_monte_carlo(self,tmax,g_set,fitness_func,\
+                        p_mut,ne,*,max_steps=10**6):
+        """
+        generate a collection of evolutionary trajectories in the strong selection, weak mutation regime starting with initial genomes from g_set
+        """
+
+        # run simulations
+        trajectories = []
+        for g in tqdm(g_set):
+            trajectory = self.substitution_evolution(tmax,g,\
+                fitness_func,p_mut,ne,max_steps=max_steps)
+            trajectories.append(trajectory)
+
+        # make summary dataframe
+        summary = pd.DataFrame()
+
+        # we need to make a new time grid to align the times
+        time = np.linspace(0,tmax+0.1*tmax,10000)
+        summary['time'] = time
+
+        aligned_el = np.zeros((len(g_set),10000))
+        for j in range(len(g_set)):
+            new_el = trajectories[j].resample_expression_level(time)
+            aligned_el[j] = new_el
+        summary['expression_level_avg'] = np.mean(aligned_el,axis=0)
+        summary['expression_level_std'] = np.std(aligned_el,axis=0)
+
+
+        return trajectories,summary
+
+
+
+
+
 
     # def moran_evolution(self,tmax,G,fitness_func,p_mut,*,max_steps=10**6):
     #     # initialize division times

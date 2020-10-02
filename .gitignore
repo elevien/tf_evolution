@@ -1,0 +1,8 @@
+*.aux
+*__pycache__
+*.egg*
+*.tif*
+**/sandbox*
+**/output*
+**/experimental_data*
+*.csv
